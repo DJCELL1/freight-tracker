@@ -7,12 +7,16 @@ the delivery marks alone, so a second scan of a pack never loses the fact that
 something has already landed.
 """
 
+import os
 import sqlite3
 from contextlib import contextmanager
 
 import eta as eta_calc
 
-DB_PATH = "freight_tracker.db"
+# Where the database lives. Locally that is a file beside the app; on a host
+# whose filesystem is rebuilt on every deploy it has to point at a mounted
+# volume instead, or every shipment is lost the next time the app ships.
+DB_PATH = os.environ.get("FREIGHT_DB_PATH", "freight_tracker.db")
 
 DEFAULT_SETTINGS = {
     "transit_days": str(eta_calc.DEFAULT_TRANSIT_DAYS),
@@ -40,6 +44,10 @@ def get_conn():
 
 
 def init_db():
+    # A volume mount point exists, but a subdirectory under it may not.
+    parent = os.path.dirname(os.path.abspath(DB_PATH))
+    os.makedirs(parent, exist_ok=True)
+
     with get_conn() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS shipments (

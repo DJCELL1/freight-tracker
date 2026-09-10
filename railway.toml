@@ -1,0 +1,21 @@
+# Railway build and run configuration.
+#
+# The Dockerfile is used rather than the default autodetection because this app
+# needs system packages (poppler, tesseract) that a plain Python buildpack will
+# not install.
+
+[build]
+builder = "dockerfile"
+
+[deploy]
+# Streamlit's own health endpoint, so a failed boot is caught at deploy time
+# rather than by a user hitting a dead page.
+healthcheckPath = "/_stcore/health"
+healthcheckTimeout = 120
+
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+# One instance only. The database is a SQLite file on a single mounted volume,
+# and concurrent writers across replicas would corrupt it.
+numReplicas = 1

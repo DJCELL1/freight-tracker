@@ -39,9 +39,33 @@ delivered when it lands, or to leave a note.
 if that suits the lane better), and the origin used when a scan is too degraded
 to read the sender's address.
 
-Everything is stored in a local SQLite file, `freight_tracker.db`, created next
-to the app on first run. It is gitignored — it holds your consignments, not
-code.
+Everything is stored in a SQLite file, `freight_tracker.db`, created next to
+the app on first run. It is gitignored — it holds your consignments, not code.
+Set `FREIGHT_DB_PATH` to put it somewhere else, which is what the deployment
+below does.
+
+## Deploying it on Railway
+
+The repo carries a `Dockerfile` and a `railway.toml`, so Railway builds it
+without further configuration — but **add the volume before you rely on it**.
+
+1. **New Project → Deploy from GitHub repo**, and pick this repository. Railway
+   reads `railway.toml`, builds the Dockerfile, and starts the app on its own
+   `$PORT`.
+2. **Add a volume.** In the service, **Settings → Volumes → Add volume**, mount
+   path `/data`. This is the step that matters: without it the container's
+   filesystem is rebuilt on every deploy and every shipment you have logged
+   disappears the next time you push a change. The image already points
+   `FREIGHT_DB_PATH` at `/data/freight_tracker.db`.
+3. **Generate a domain** under **Settings → Networking** to get a URL.
+
+The service is pinned to one instance on purpose. The database is a single
+SQLite file on one volume, and a second replica writing to it concurrently
+would corrupt it. Scaling past one instance means moving to Postgres first.
+
+Anyone with the URL can reach the app — Streamlit has no login of its own. Put
+it behind Railway's private networking, or in front of an authenticating proxy,
+if that matters for your freight data.
 
 ## How a manifest is read
 
